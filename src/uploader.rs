@@ -12,7 +12,7 @@ pub fn upload_file(path: &Path, config: &Config, discord_user_id: u64) -> anyhow
     
     // Create a blocking reqwest post to the upload_url/{discord_id} where the bytes of the file are sent in the body.
     reqwest::blocking::Client::new()
-        .post(&format!("{}/{}", config.upload_url, discord_user_id))
+        .post(&format!("{}/upload_raw/{}", config.upload_url, discord_user_id))
         .body(std::fs::read(path)?)
         .send()?
         .error_for_status()?;

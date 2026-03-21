@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::config::Config;
 
 // This points to YOUR server, not Discord directly
-const DISCORD_OAUTH_URL: &str = "http://localhost:8080/auth/discord/start";
+// const DISCORD_OAUTH_URL: &str = "http://localhost:8080/auth/discord/start";
 
 pub fn ensure_user_id(config: Arc<Mutex<Config>>, timeout: Duration) -> anyhow::Result<u64> {
     {
@@ -13,9 +13,12 @@ pub fn ensure_user_id(config: Arc<Mutex<Config>>, timeout: Duration) -> anyhow::
             return Ok(config_guard.discord_id);
         }
     } // release lock before blocking
-
+    
+    let cfg = config.lock().unwrap().clone();
+    let oauth_url = format!("{}/auth/discord/start", cfg.upload_url);
+    
     log::info!("No stored Discord user ID — starting Discord OAuth flow.");
-    let id = run_oauth_flow(timeout)?;
+    let id = run_oauth_flow(oauth_url, timeout)?;
 
     let mut config_guard = config.lock().unwrap();
     config_guard.discord_id = id;
@@ -24,12 +27,12 @@ pub fn ensure_user_id(config: Arc<Mutex<Config>>, timeout: Duration) -> anyhow::
     Ok(id)
 }
 
-fn run_oauth_flow(timeout: Duration) -> anyhow::Result<u64> {
+fn run_oauth_flow(oauth_url: String, timeout: Duration) -> anyhow::Result<u64> {
     // Start local server BEFORE opening browser
     let server = tiny_http::Server::http("127.0.0.1:8085")
         .map_err(|e| anyhow::anyhow!("Failed to bind 127.0.0.1:8085: {}", e))?;
 
-    open_browser(DISCORD_OAUTH_URL)?;
+    open_browser(&oauth_url)?;
     log::info!("Browser opened, waiting for OAuth callback...");
 
     let request = server

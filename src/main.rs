@@ -129,7 +129,7 @@ fn main() {
 
     let menu = Menu::new();
 
-    let status_item = MenuItem::with_id("status", "File Watcher — Running", false, None);
+    let status_item = MenuItem::with_id("status", "Erdos - Minimal Auto-Uploader", false, None);
     let sep1 = PredefinedMenuItem::separator();
 
     let delete_enabled = config.lock().unwrap().delete_after_upload;

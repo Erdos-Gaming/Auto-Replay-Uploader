@@ -88,7 +88,7 @@ impl Default for Config {
     fn default() -> Self {
         Config {
             watch_dirs: default_watch_dirs(),
-            upload_url: "https://alpha.erdosgaming.com/upload_raw".to_string(),
+            upload_url: "https://alpha.erdosgaming.com".to_string(),
             delete_after_upload: false,
             discord_id: 0,
             settle_ms: default_settle_ms(),
