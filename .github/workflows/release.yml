@@ -39,6 +39,9 @@ jobs:
 
       - name: Install cargo-packager
         run: cargo install cargo-packager --locked
+        
+      - name: Build exe
+        run: cargo build --release
 
       - name: Build installer
         run: cargo packager --release
