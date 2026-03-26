@@ -22,7 +22,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache cargo
+      - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: |
@@ -31,15 +31,26 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build release
-        run: cargo build --release
+      - name: Cache cargo-packager binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-packager.exe
+          key: cargo-packager-${{ runner.os }}
+
+      - name: Install cargo-packager
+        run: cargo install cargo-packager --locked
+
+      - name: Build installer
+        run: cargo packager --release
 
       - name: Compute SHA-256
         id: hash
         shell: bash
         run: |
-          sha256sum target/release/erdos-auto-uploader.exe > erdos-auto-uploader.exe.sha256
-          echo "sha=$(cut -d' ' -f1 erdos-auto-uploader.exe.sha256)" >> $GITHUB_OUTPUT
+          SETUP=$(ls target/release/*-setup.exe | head -1)
+          sha256sum "$SETUP" > "${SETUP}.sha256"
+          echo "setup=$SETUP" >> $GITHUB_OUTPUT
+          echo "sha=$(cut -d' ' -f1 ${SETUP}.sha256)" >> $GITHUB_OUTPUT
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -48,9 +59,10 @@ jobs:
           body: |
             ## Erdos Auto Uploader ${{ github.ref_name }}
 
-            **SHA-256:** `${{ steps.hash.outputs.sha }}`
+            Download and run the setup exe to install.
 
-            Download `erdos-auto-uploader.exe` and optionally verify the hash matches before running.
+            **SHA-256:** `${{ steps.hash.outputs.sha }}`
           files: |
-            target/release/erdos-auto-uploader.exe
-            erdos-auto-uploader.exe.sha256
+            ${{ steps.hash.outputs.setup }}
+            ${{ steps.hash.outputs.setup }}.sha256
+  

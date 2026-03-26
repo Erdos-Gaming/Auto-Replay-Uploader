@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"] // Hides the console window on Windows
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{path::PathBuf, sync::{Arc, Mutex}, thread};
 
@@ -18,13 +18,16 @@ mod uploader;
 mod auth;
 mod config;
 mod icon;
+mod startup;
 
 const ID_TOGGLE_DELETE: &str = "toggle_delete";
+const ID_TOGGLE_STARTUP: &str = "toggle_startup";
 const ID_EXIT: &str = "exit";
 
 struct App {
     config: Arc<Mutex<Config>>,
     toggle_delete_item: MenuItem,
+    toggle_startup_item: MenuItem,
     _tray: tray_icon::TrayIcon,
 }
 
@@ -65,6 +68,15 @@ impl ApplicationHandler for App {
 
                     if let Err(e) = cfg.save() {
                         log::error!("Failed to save config: {}", e);
+                    }
+                }
+                ID_TOGGLE_STARTUP => {
+                    match startup::toggle() {
+                        Ok(enabled) => {
+                            self.toggle_startup_item.set_text(startup_label(enabled));
+                            log::info!("Launch at startup → {}", enabled);
+                        }
+                        Err(e) => log::error!("Failed to toggle startup: {}", e),
                     }
                 }
                 _ => {}
@@ -136,10 +148,14 @@ fn main() {
     let toggle_delete_item =
         MenuItem::with_id(ID_TOGGLE_DELETE, delete_label(delete_enabled), true, None);
 
+    let startup_enabled = startup::is_enabled();
+    let toggle_startup_item =
+        MenuItem::with_id(ID_TOGGLE_STARTUP, startup_label(startup_enabled), true, None);
+
     let sep2 = PredefinedMenuItem::separator();
     let exit_item = MenuItem::with_id(ID_EXIT, "Exit", true, None);
 
-    menu.append_items(&[&status_item, &sep1, &toggle_delete_item, &sep2, &exit_item])
+    menu.append_items(&[&status_item, &sep1, &toggle_delete_item, &toggle_startup_item, &sep2, &exit_item])
         .expect("Failed to build tray menu");
 
     let tray_icon = icon::load_tray_icon();
@@ -155,6 +171,7 @@ fn main() {
     let mut app = App {
         config,
         toggle_delete_item,
+        toggle_startup_item,
         _tray: tray,
     };
 
@@ -227,6 +244,14 @@ fn delete_label(enabled: bool) -> &'static str {
         "✓  Delete after upload"
     } else {
         "    Delete after upload"
+    }
+}
+
+fn startup_label(enabled: bool) -> &'static str {
+    if enabled {
+        "✓  Launch at startup"
+    } else {
+        "    Launch at startup"
     }
 }
 
