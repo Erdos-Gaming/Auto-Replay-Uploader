@@ -1,6 +1,6 @@
 [package]
 name = "erdos-auto-uploader"
-version = "0.1.0"
+version = "1.1.1"
 edition = "2024"
 description = "Zero-idle-CPU file watcher"
 license = "GPL-3.0-or-later"
@@ -53,6 +53,9 @@ tiny_http = "0.12.0"
 
 # Windows registry (launch at startup)
 winreg = "0.52"
+serde_json = "1.0.149"
+
+semver = "1.0.27"
 
 # Embeds the Windows application manifest (no-console + DPI awareness).
 # Only used during the build step on Windows hosts.
@@ -69,13 +72,20 @@ panic = "abort"       # Smaller panic handler
 [package.metadata.packager]
 product_name = "Erdos Auto Uploader"
 identifier = "com.erdosgaming.auto-uploader"
-version = "0.1.0"
 description = "Zero-idle-CPU Rocket League replay uploader"
 long_description = "Automatically uploads your Rocket League replays to the Erdos performance service the moment they're saved."
 publisher = "Shapley Technologies, Inc"
 license_file = "LICENSE"
 icons = ["assets/erdos_alpha.ico", "assets/erdos_alpha.png"]
 
-# Only produce an NSIS installer on Windows
 formats = ["nsis"]
 
+# [package.metadata.packager.nsis]
+# preinstall-section = """
+# Section KillRunning
+#   StrCmp $CMDLINE "/S" 0 skip_kill
+#     nsExec::Exec 'taskkill /F /IM erdos-auto-uploader.exe'
+#     Sleep 500
+#   skip_kill:
+# SectionEnd
+# """

@@ -67,7 +67,7 @@ impl ApplicationHandler for App {
                     self.toggle_delete_item.set_text(delete_label(new_val));
 
                     if let Err(e) = cfg.save() {
-                        log::error!("Failed to save config: {}", e);
+                        log::error!("Failed to save config: {:#?}", e);
                     }
                 }
                 ID_TOGGLE_STARTUP => {
@@ -76,7 +76,7 @@ impl ApplicationHandler for App {
                             self.toggle_startup_item.set_text(startup_label(enabled));
                             log::info!("Launch at startup → {}", enabled);
                         }
-                        Err(e) => log::error!("Failed to toggle startup: {}", e),
+                        Err(e) => log::error!("Failed to toggle startup: {:#?}", e),
                     }
                 }
                 _ => {}
@@ -93,8 +93,6 @@ fn main() {
     // Initialise logger (stderr in debug, log file in release)
     init_logger();
 
-    
-
     // Load config — creates a default config.toml on first run
     let config = Arc::new(Mutex::new(match Config::load() {
         Ok(c) => {
@@ -102,7 +100,7 @@ fn main() {
             c
         }
         Err(e) => {
-            log::error!("Failed to load config: {}. Using defaults.", e);
+            log::error!("Failed to load config: {:#?}. Using defaults.", e);
             Config::default()
         }
     }));
@@ -131,7 +129,7 @@ fn main() {
     let _watcher = {
         let dirs = config.lock().unwrap().watch_dirs.clone();
         if let Err(e) = watcher::start_watcher(config.clone(), &dirs, file_tx) {
-            log::error!("Failed to start watcher: {}", e);
+            log::error!("Failed to start watcher: {:#?}", e);
             std::process::exit(1);
         }
     };
@@ -141,7 +139,7 @@ fn main() {
 
     let menu = Menu::new();
 
-    let status_item = MenuItem::with_id("status", "Erdos - Minimal Auto-Uploader", false, None);
+    let status_item = MenuItem::with_id("status", concat!("Erdos Auto Uploader v", env!("CARGO_PKG_VERSION")), false, None);
     let sep1 = PredefinedMenuItem::separator();
 
     let delete_enabled = config.lock().unwrap().delete_after_upload;
@@ -161,7 +159,7 @@ fn main() {
     let tray_icon = icon::load_tray_icon();
     let tray = TrayIconBuilder::new()
         .with_menu(Box::new(menu))
-        .with_tooltip("Erdos - Minimal Auto-Uploader")
+        .with_tooltip(concat!("Erdos Auto Uploader v", env!("CARGO_PKG_VERSION")))
         .with_icon(tray_icon)
         .build()
         .expect("Failed to create tray icon");
@@ -214,7 +212,7 @@ fn spawn_upload_worker(rx: Receiver<PathBuf>, config: Arc<Mutex<Config>>, discor
                                 log::info!("Upload complete: {}", path.display());
                                 if cfg.delete_after_upload {
                                     if let Err(e) = std::fs::remove_file(&path) {
-                                        log::error!("Delete failed: {}", e);
+                                        log::error!("Delete failed: {:#?}", e);
                                     } else {
                                         log::info!("Deleted: {}", path.display());
                                     }
@@ -222,7 +220,7 @@ fn spawn_upload_worker(rx: Receiver<PathBuf>, config: Arc<Mutex<Config>>, discor
                             }
                             Err(e) => {
                                 log::error!(
-                                    "Upload failed for {}: {}",
+                                    "Upload failed for {}: {:#?}",
                                     path.display(),
                                     e
                                 );
