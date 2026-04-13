@@ -268,32 +268,30 @@ fn init_logger() {
         use log4rs::{
             append::rolling_file::{
                 policy::compound::{
-                    trigger::time::TimeTrigger,
+                    trigger::size::SizeTrigger,
                     roll::fixed_window::FixedWindowRoller,
-                    CompoundPolicy,
+                    roll::Roll,
+                    CompoundPolicy
                 },
                 RollingFileAppender,
             },
             encode::pattern::PatternEncoder,
         };
-
         let log_dir = config::app_data_dir();
         let log_path = log_dir.join("erdos.log");
         let archive_pattern = log_dir.join("erdos-{}.log").to_string_lossy().to_string();
-
         let roller = FixedWindowRoller::builder()
-            .build(&archive_pattern, 7) // keep 7 days of logs
+            .build(&archive_pattern, 7)
             .expect("Cannot build log roller");
-
-        let trigger = TimeTrigger::new(Default::default());
-
+        if log_path.exists() {
+            roller.roll(&log_path).expect("Cannot roll log on startup");
+        }
+        let trigger = SizeTrigger::new(u64::MAX);
         let policy = CompoundPolicy::new(Box::new(trigger), Box::new(roller));
-
         let appender = RollingFileAppender::builder()
             .encoder(Box::new(PatternEncoder::new("{d(%Y-%m-%d %H:%M:%S)} {l} {t} - {m}{n}")))
             .build(&log_path, Box::new(policy))
             .expect("Cannot build log appender");
-
         let log_config = log4rs::config::Config::builder()
             .appender(log4rs::config::Appender::builder().build("file", Box::new(appender)))
             .build(
@@ -304,7 +302,6 @@ fn init_logger() {
             .expect("Cannot build log config");
         
         log4rs::init_config(log_config).expect("Cannot init logger");
-
         log::info!("Logging to {}", log_path.display());
     }
 }
