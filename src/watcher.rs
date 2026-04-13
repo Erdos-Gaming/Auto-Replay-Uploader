@@ -113,7 +113,7 @@ fn wait_for_dirs(dirs: &[PathBuf], poll_interval: Duration) {
 }
 
 fn scan_dir(dir: &Path) -> Vec<PathBuf> {
-    log::info!("Scanning directory {}", dir.display());
+    // log::info!("Scanning directory {}", dir.display());
     match std::fs::read_dir(dir) {
         Ok(entries) => {
             let out: Vec<PathBuf> = entries
@@ -124,7 +124,7 @@ fn scan_dir(dir: &Path) -> Vec<PathBuf> {
                 })
             .collect();
             
-            log::info!("Found {} files in {}", out.len(), dir.display());
+            // log::info!("Found {} files in {}", out.len(), dir.display());
             out
         },
         Err(e) => {
