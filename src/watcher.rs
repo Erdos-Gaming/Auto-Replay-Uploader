@@ -89,6 +89,7 @@ pub fn start_watcher(config: Arc<Mutex<Config>>, dirs: &[String], tx: Sender<Pat
 fn wait_for_dirs(dirs: &[PathBuf], poll_interval: Duration) {
     let mut logged_waiting = false;
 
+    
     loop {
         let all_ready = dirs.iter().all(|d| std::fs::read_dir(d).is_ok());
 
