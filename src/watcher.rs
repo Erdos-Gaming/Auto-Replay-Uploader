@@ -26,12 +26,12 @@ pub fn start_watcher(config: Arc<Mutex<Config>>, dirs: &[String], tx: Sender<Pat
         .map(|d| Path::new(d).to_path_buf())
         .collect();
     
-    let mut watch_dirs_autoclouds = HashMap::<PathBuf, Option<SystemTime>>::new();
+    let mut watch_dirs_autoclouds = HashMap::<PathBuf, SystemTime>::new();
     
     for dir in &watch_dirs {
         let autocloud = dir.join("steam_autocloud.vdf");
-        if autocloud.exists() {
-            watch_dirs_autoclouds.insert(dir.clone(), get_autocloud_modified_time(&dir));
+        if autocloud.exists() && let Some(modified_time) = get_autocloud_modified_time(&dir) {
+            watch_dirs_autoclouds.insert(dir.clone(), modified_time);
         }
     }
 
@@ -54,11 +54,11 @@ pub fn start_watcher(config: Arc<Mutex<Config>>, dirs: &[String], tx: Sender<Pat
                 for path in scan_dir(dir) {
                     if !seen.contains(&path) {
                         if let Some(last_mod) = watch_dirs_autoclouds.get(dir) {
-                            let mod_time = get_autocloud_modified_time(dir);
-                            if mod_time != *last_mod {
+                            if let Some(mod_time) = get_autocloud_modified_time(dir) && &mod_time != last_mod {
                                 log::info!("Detected change in steam_autocloud.vdf for {}, re-seeding...", dir.display());
-                                // Force a rescan and add to the seen hashset
+                                watch_dirs_autoclouds.insert(dir.clone(), mod_time);
                                 
+                                // Force a rescan and add to the seen hashset
                                 let new_files = scan_dir(dir);
                                 for f in new_files {
                                     seen.insert(f);
